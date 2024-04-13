@@ -1,0 +1,19 @@
+[package]
+name = "rust-release-upgradepath-tool"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+reqwest = { version = "0.11.22", features = ["json"] }
+tokio = { version = "1", features = ["full"] }
+serde = "1.0.196"
+serde_derive = { version = "1.0.196" }
+serde_json = { version = "1.0.113" }
+async-trait = "0.1.74"
+clap = { version = "4.4.6", features = ["derive"] }
+semver = "1.0.17"
+
+# github libraries
+custom-logger = { git = "https://github.com/lmzuccarelli/rust-custom-logger", branch = "main", version = "0.1.3" }
