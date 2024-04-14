@@ -21,5 +21,9 @@ cover:
 	grcov . --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore '../*' --ignore "/*" --ignore "src/main.rs" --ignore "src/api/*"  -o target/coverage/html
 	cp target/coverage/html/html/badges/flat.svg assets/
 
-clean:
+clean-all:
+	rm -rf cargo-test*
+	cargo clean
+
+clean-test:
 	rm -rf cargo-test*

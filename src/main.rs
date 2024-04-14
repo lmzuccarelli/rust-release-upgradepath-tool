@@ -5,14 +5,14 @@ use std::fs;
 use std::path::Path;
 
 mod api;
-mod calculate;
+mod graphdata;
 mod isc;
-mod request;
+mod upgradepath;
 
 use api::schema::*;
-use calculate::upgradepath::*;
+use graphdata::request::*;
 use isc::generate::*;
-use request::graphdata::*;
+use upgradepath::calculate::*;
 
 // main entry point (use async)
 #[tokio::main]
@@ -22,7 +22,7 @@ async fn main() {
     let args_check: Vec<_> = std::env::args().collect();
     // 4 args from-version to-version channel arch
     if args_check.len() < 4 {
-        eprintln!("Usage: rust-release-upgradepath-tool --help");
+        eprintln!("Usage: rust-release-introspection-tool --help");
         std::process::exit(1);
     }
 
@@ -55,13 +55,12 @@ async fn main() {
     log.info(&format!("to_version: {}", to_version));
     log.info(&format!("arch: {:#?}", arch.clone()));
 
-    let file_name = format!("{}_{}.json", channel, arch);
+    let file_name = format!("cache/{}_{}.json", channel, arch);
     let json_data: String;
 
     // first check if we has this json on disk
     if Path::new(&file_name.clone()).exists() {
-        json_data =
-            fs::read_to_string(format!("{}_{}.json", channel, arch)).expect("unable to read file");
+        json_data = fs::read_to_string(file_name).expect("unable to read file");
     } else {
         let url = format!(
         "https://api.openshift.com/api/upgrades_info/v1/graph?arch={}&channel={}&id=dfb7d530-e876-425b-80b7-374ba5800525&version={}",arch,channel,from_version);
