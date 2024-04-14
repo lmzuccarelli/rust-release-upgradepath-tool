@@ -121,7 +121,6 @@ pub fn get_upgrade_path(
         counter += 1;
     }
 
-    // get all toVersion links
     for edge in graphdata.edges.iter() {
         if edge[0] == to_index {
             //println!("to_version {} {}",edge[1], graphdata.nodes[edge[1]].version);
@@ -137,9 +136,24 @@ pub fn get_upgrade_path(
             upgrade_list.push(version);
         }
     }
+
     upgrade_list.push(Version::parse(&from_version).unwrap());
     upgrade_list.push(Version::parse(&last_version).unwrap());
-    upgrade_list.push(Version::parse(&to_version).unwrap());
+
+    // find the head
+    let mut head = Version::parse("0.0.0".as_ref()).unwrap();
+    for node in graphdata.nodes.iter() {
+        let version = Version::parse(&node.version).unwrap();
+        if version.gt(&head) {
+            head = version;
+        }
+    }
+
+    // check the to_version against the head
+    if head.gt(&Version::parse(&to_version).unwrap()) {
+        upgrade_list.push(Version::parse(&to_version).unwrap());
+    }
+
     upgrade_list.sort();
 
     // finally look up the image references (for v3)
