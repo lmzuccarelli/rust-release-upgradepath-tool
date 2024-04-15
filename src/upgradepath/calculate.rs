@@ -91,15 +91,22 @@ pub fn get_upgrade_path(
 
     let last_version = to[to.len() - 1].to_string();
 
-    // find the index of the node with version 4.13.38
-    let mut counter: u32 = 0;
-    let mut index: u32 = 0;
-    for node in graphdata.nodes.iter() {
-        if node.version == last_version.to_string() {
-            index = counter;
-            log.lo(&format!("index: {}", index));
-        }
-        counter += 1;
+    // find the index of the node with version of the intermediate (last_version) if it exists
+    let idx = graphdata
+        .nodes
+        .iter()
+        .position(|x| x.version == last_version.to_string());
+
+    let index: u32;
+    // needs verification : still a WIP
+    if idx.is_none() {
+        index = graphdata
+            .nodes
+            .iter()
+            .position(|x| x.version == to_version)
+            .unwrap() as u32;
+    } else {
+        index = idx.unwrap() as u32;
     }
 
     /*
@@ -110,22 +117,6 @@ pub fn get_upgrade_path(
         println!("        {}", risk.message);
     }
     */
-
-    let mut counter: u32 = 0;
-    let mut to_index: u32 = 0;
-
-    for node in graphdata.nodes.iter() {
-        if node.version == to_version {
-            to_index = counter;
-        }
-        counter += 1;
-    }
-
-    for edge in graphdata.edges.iter() {
-        if edge[0] == to_index {
-            //println!("to_version {} {}",edge[1], graphdata.nodes[edge[1]].version);
-        }
-    }
 
     let mut upgrade_list: Vec<Version> = vec![];
     // get all links from this index
@@ -141,13 +132,12 @@ pub fn get_upgrade_path(
     upgrade_list.push(Version::parse(&last_version).unwrap());
 
     // find the head
-    let mut head = Version::parse("0.0.0".as_ref()).unwrap();
-    for node in graphdata.nodes.iter() {
-        let version = Version::parse(&node.version).unwrap();
-        if version.gt(&head) {
-            head = version;
-        }
-    }
+    let head = graphdata
+        .nodes
+        .iter()
+        .map(|x| Version::parse(&x.version).unwrap())
+        .max()
+        .unwrap();
 
     // check the to_version against the head
     if head.gt(&Version::parse(&to_version).unwrap()) {
