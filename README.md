@@ -1,6 +1,6 @@
 ## Overview
 
-This is a simple POC that uses an api to get the cincinnati json graph data, inspect it and generate an imagesetconfiguration file for variousi openshift mirror tools. 
+This is a simple POC that uses an api to get the cincinnati json graph data, inspect it and generate an imagesetconfiguration file for various openshift mirror tools. 
 
 ## POC 
 

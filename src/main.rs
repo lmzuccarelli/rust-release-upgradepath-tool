@@ -20,7 +20,7 @@ async fn main() {
     let args = Cli::parse();
 
     let args_check: Vec<_> = std::env::args().collect();
-    // 4 args from-version to-version channel arch
+    // 4 args from-version, to-version, channel, arch
     if args_check.len() < 4 {
         eprintln!("Usage: rust-release-introspection-tool --help");
         std::process::exit(1);
@@ -58,24 +58,23 @@ async fn main() {
     let file_name = format!("cache/{}_{}.json", channel, arch);
     let json_data: String;
 
-    // first check if we has this json on disk
+    // first check if we have this json on disk
     if Path::new(&file_name.clone()).exists() {
         json_data = fs::read_to_string(file_name).expect("unable to read file");
     } else {
         let url = format!(
         "https://api.openshift.com/api/upgrades_info/v1/graph?arch={}&channel={}&id=dfb7d530-e876-425b-80b7-374ba5800525&version={}",arch,channel,from_version);
-
         // setup the request interface
         let g_con = ImplUpgradePathInterface {};
         json_data = g_con.get_graphdata(url.clone()).await.unwrap();
-
         // we can now save the json to file
         fs::write(file_name, json_data.clone()).expect("unable to write file");
     }
 
     // parse and calculate the upgrade path
-    let graphdata = parse_json_graphdata(json_data.clone()).unwrap();
-    let images = get_upgrade_path(log, from_version, to_version, graphdata);
+    let g = Graph::new();
+    let graphdata = g.parse_json_graphdata(json_data.clone()).unwrap();
+    let images = g.get_upgrade_path(log, from_version, to_version, graphdata);
     let v2_yml = IscV2Alpha1::new().to_yaml(channel, images.clone());
     log.debug(&format!("{}", v2_yml.clone()));
     let v3_yml = IscV3Alpha1::new().to_yaml(images.clone());

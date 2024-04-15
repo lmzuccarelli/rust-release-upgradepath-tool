@@ -6,7 +6,7 @@ pub struct ImplUpgradePathInterface {}
 
 #[async_trait]
 pub trait UpgradePathInterface {
-    // used to interact with container registry (manifest calls)
+    // used to interact with cincinnati api
     async fn get_graphdata(&self, url: String) -> Result<String, Box<dyn std::error::Error>>;
 }
 

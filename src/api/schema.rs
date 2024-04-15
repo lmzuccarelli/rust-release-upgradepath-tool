@@ -1,4 +1,4 @@
-// rust-container-tool cli struct
+// rust-release-upgrade-path-tool cli struct
 use clap::Parser;
 
 #[derive(Parser, Debug)]

@@ -48,123 +48,131 @@ pub struct UpgradeResult {
     pub image: String,
 }
 
-// parse the json for graphdata
-pub fn parse_json_graphdata(data: String) -> Result<Graph, Box<dyn std::error::Error>> {
-    // Parse the string of data into serde_json::ManifestSchema.
-    let graph: Graph = serde_json::from_str(&data)?;
-    Ok(graph)
-}
-
-// calculate the upgradepath
-pub fn get_upgrade_path(
-    log: &Logging,
-    from_version: String,
-    to_version: String,
-    graphdata: Graph,
-) -> Vec<UpgradeResult> {
-    // get ConditionalEdge
-    let mut to: Vec<Version> = vec![];
-    let mut risks: Vec<Risk> = vec![];
-    let mut upgrade_images: Vec<UpgradeResult> = vec![];
-
-    for edge in graphdata.conditional_edges.iter() {
-        for e in edge.edges.iter() {
-            if e.from == from_version {
-                let version = Version::parse(&e.to).unwrap();
-                to.push(version);
-                for r in edge.risks.iter() {
-                    risks.push(r.clone());
-                }
-            }
+impl Graph {
+    pub fn new() -> Self {
+        Graph {
+            nodes: vec![],
+            edges: vec![],
+            conditional_edges: vec![],
         }
     }
 
-    to.sort();
-    log.lo(&format!("list : {:#?}", to.len()));
-
-    if to.len() == 0 {
-        return vec![UpgradeResult {
-            version: "".to_string(),
-            image: "".to_string(),
-        }];
+    // parse the json for graphdata
+    pub fn parse_json_graphdata(&self, data: String) -> Result<Self, Box<dyn std::error::Error>> {
+        // Parse the string of data into serde_json::ManifestSchema.
+        let graph: Graph = serde_json::from_str(&data)?;
+        Ok(graph)
     }
 
-    let last_version = to[to.len() - 1].to_string();
+    // calculate the upgradepath
+    pub fn get_upgrade_path(
+        &self,
+        log: &Logging,
+        from_version: String,
+        to_version: String,
+        graphdata: Graph,
+    ) -> Vec<UpgradeResult> {
+        // get ConditionalEdge
+        let mut to: Vec<Version> = vec![];
+        let mut risks: Vec<Risk> = vec![];
+        let mut upgrade_images: Vec<UpgradeResult> = vec![];
 
-    // find the index of the node with version of the intermediate (last_version) if it exists
-    let idx = graphdata
-        .nodes
-        .iter()
-        .position(|x| x.version == last_version.to_string());
+        for edge in graphdata.conditional_edges.iter() {
+            for e in edge.edges.iter() {
+                if e.from == from_version {
+                    let version = Version::parse(&e.to).unwrap();
+                    to.push(version);
+                    for r in edge.risks.iter() {
+                        risks.push(r.clone());
+                    }
+                }
+            }
+        }
 
-    let index: u32;
-    // needs verification : still a WIP
-    if idx.is_none() {
-        index = graphdata
+        to.sort();
+        log.lo(&format!("list : {:#?}", to.len()));
+
+        if to.len() == 0 {
+            return vec![UpgradeResult {
+                version: "".to_string(),
+                image: "".to_string(),
+            }];
+        }
+
+        let last_version = to[to.len() - 1].to_string();
+
+        // find the index of the node with version of the intermediate (last_version) if it exists
+        let idx = graphdata
             .nodes
             .iter()
-            .position(|x| x.version == to_version)
-            .unwrap() as u32;
-    } else {
-        index = idx.unwrap() as u32;
-    }
+            .position(|x| x.version == last_version.to_string());
 
-    /*
-    for risk in risks.iter() {
-        println!("risks : ");
-        println!("        {}", risk.url);
-        println!("        {}", risk.name);
-        println!("        {}", risk.message);
-    }
-    */
-
-    let mut upgrade_list: Vec<Version> = vec![];
-    // get all links from this index
-    for edge in graphdata.edges.iter() {
-        if edge[0] == index {
-            let idx = edge[1] as usize;
-            let version = Version::parse(&graphdata.nodes[idx].version).unwrap();
-            upgrade_list.push(version);
+        let index: u32;
+        // needs verification : still a WIP
+        if idx.is_none() {
+            index = graphdata
+                .nodes
+                .iter()
+                .position(|x| x.version == to_version)
+                .unwrap() as u32;
+        } else {
+            index = idx.unwrap() as u32;
         }
-    }
 
-    upgrade_list.push(Version::parse(&from_version).unwrap());
-    upgrade_list.push(Version::parse(&last_version).unwrap());
+        /*
+        for risk in risks.iter() {
+            println!("risks : ");
+            println!("        {}", risk.url);
+            println!("        {}", risk.name);
+            println!("        {}", risk.message);
+        }
+        */
 
-    // find the head
-    let head = graphdata
-        .nodes
-        .iter()
-        .map(|x| Version::parse(&x.version).unwrap())
-        .max()
-        .unwrap();
+        let mut upgrade_list = graphdata
+            .edges
+            .iter()
+            .filter(|x| x[0] == index)
+            .map(|x| Version::parse(&graphdata.nodes[x[1] as usize].version).unwrap())
+            .collect::<Vec<Version>>();
 
-    // check the to_version against the head
-    if head.gt(&Version::parse(&to_version).unwrap()) {
-        upgrade_list.push(Version::parse(&to_version).unwrap());
-    }
+        upgrade_list.push(Version::parse(&from_version).unwrap());
+        upgrade_list.push(Version::parse(&last_version).unwrap());
 
-    upgrade_list.sort();
+        // find the head
+        let head = graphdata
+            .nodes
+            .iter()
+            .map(|x| Version::parse(&x.version).unwrap())
+            .max()
+            .unwrap();
 
-    // finally look up the image references (for v3)
-    for node in graphdata.nodes.iter() {
-        for version in upgrade_list.iter() {
-            if node.version == version.to_string() {
-                match &node.payload {
-                    Some(image) => {
-                        let upgrade_result = UpgradeResult {
-                            version: version.to_string(),
-                            image: image.clone(),
-                        };
-                        upgrade_images.push(upgrade_result);
-                    }
-                    None => {
-                        log.lo("no image found");
+        // check the to_version against the head
+        if head.gt(&Version::parse(&to_version).unwrap()) {
+            upgrade_list.push(Version::parse(&to_version).unwrap());
+        }
+
+        upgrade_list.sort();
+
+        // finally look up the image references (for v3)
+        for node in graphdata.nodes.iter() {
+            for version in upgrade_list.iter() {
+                if node.version == version.to_string() {
+                    match &node.payload {
+                        Some(image) => {
+                            let upgrade_result = UpgradeResult {
+                                version: version.to_string(),
+                                image: image.clone(),
+                            };
+                            upgrade_images.push(upgrade_result);
+                        }
+                        None => {
+                            log.lo("no image found");
+                        }
                     }
                 }
             }
         }
+        upgrade_images.sort_by(|a, b| a.version.cmp(&b.version));
+        upgrade_images
     }
-    upgrade_images.sort_by(|a, b| a.version.cmp(&b.version));
-    upgrade_images
 }
