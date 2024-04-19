@@ -1,3 +1,4 @@
+use crate::graphdata::request::*;
 use clap::Parser;
 use custom_logger::*;
 use semver::Version;
@@ -5,12 +6,13 @@ use std::fs;
 use std::path::Path;
 
 mod api;
+mod buildah;
 mod graphdata;
 mod isc;
 mod upgradepath;
 
 use api::schema::*;
-use graphdata::request::*;
+use buildah::build_image::*;
 use isc::generate::*;
 use upgradepath::calculate::*;
 
@@ -37,6 +39,7 @@ async fn main() {
     let arch = args.arch.to_string();
     let channel = args.channel.to_string();
     let level = args.loglevel.unwrap().to_string();
+    let graph = args.graph;
 
     // convert to enum
     let res_log_level = match level.as_str() {
@@ -69,6 +72,10 @@ async fn main() {
         json_data = g_con.get_graphdata(url.clone()).await.unwrap();
         // we can now save the json to file
         fs::write(file_name, json_data.clone()).expect("unable to write file");
+    }
+
+    if graph {
+        build_image().await;
     }
 
     // parse and calculate the upgrade path

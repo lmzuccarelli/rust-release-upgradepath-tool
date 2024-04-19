@@ -22,11 +22,12 @@ cd rust-release-introspection-tool
 
 # create a directory called cache
 mkdir cache && chmod 755 cache
+mkdir contianer && chmod 755 container
 
 make build 
 
 # this will generate imagesetconfiguration files for v2 (oc-mirror) and v3 (rust-image-mirror) tools
-./target/release/rust-release-introspection-tool --from-version 4.12.28 --to-version 4.14.16 --channel eus-4.14 --arch amd64 --loglevel debug 
+./target/release/rust-release-introspection-tool --from-version 4.12.28 --to-version 4.14.16 --channel eus-4.14 --arch amd64 --loglevel debug --graph
 
 ```
 

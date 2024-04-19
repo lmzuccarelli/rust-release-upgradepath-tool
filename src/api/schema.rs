@@ -24,6 +24,10 @@ pub struct Cli {
     #[arg(long, value_name = "channel", default_value = "eus-4.14")]
     pub channel: String,
 
+    /// graph - generate a graph container
+    #[arg(short, long, value_name = "graph", default_value = "false")]
+    pub graph: bool,
+
     /// set the loglevel. Valid arguments are info, debug, trace
     #[arg(value_enum, long, value_name = "loglevel", default_value = "info")]
     pub loglevel: Option<String>,
