@@ -119,14 +119,17 @@ impl Graph {
             index = idx.unwrap() as u32;
         }
 
-        /*
-        for risk in risks.iter() {
-            println!("risks : ");
-            println!("        {}", risk.url);
-            println!("        {}", risk.name);
-            println!("        {}", risk.message);
+        // search for risks using from = last_version and to = to_version
+        for edges in graphdata.conditional_edges.iter() {
+            for edge in edges.edges.iter() {
+                if edge.from == from_version && edge.to == last_version {
+                    for risk in edges.risks.iter() {
+                        log.lo(&format!("risk name    : {:#?}", risk.name));
+                        log.lo(&format!("risk message : {:#?}", risk.message));
+                    }
+                }
+            }
         }
-        */
 
         let mut upgrade_list = graphdata
             .edges
